@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #006B3F;
+      color: #111;
+    }
+    header {
+      background: #006B3F;
+      color: white;
+      padding: 24px;
+    }
+    h1 { margin: 0; font-size: 32px; }
+    .subtitle {
+      color: #FFD400;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    main {
+      padding: 20px;
+      background: #006B3F;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: #111;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    select, input {
+      padding: 12px;
+      border-radius: 7px;
+      border: 1px solid #ddd;
+      min-width: 180px;
+      max-width: 100%;
+      font-size: 14px;
+    }
+    #count {
+      color: #FFD400;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+    #cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: #fff;
+      border: 3px solid #FFD400;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .venue {
+      color: #006B3F;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .round {
+      background: #FFD400;
+      padding: 5px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      align-self: flex-start;
+    }
+    .time { font-size: 12px; color: #555; }
+    .topic { font-size: 18px; font-weight: bold; }
+    .person { margin-top: auto; font-size: 13px; }
+    @media(max-width: 900px) {
+      #cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media(max-width: 600px) {
+      #cards { grid-template-columns: 1fr; }
+      header, main { padding: 14px; }
+      h1 { font-size: 26px; }
+      select, input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>JUKO SESSIONS 2026</h1>
+  <div class="subtitle">NOVEMBER 19, 2026 · 5:30–8:00 PM</div>
+</header>
+<main>
+  <div class="filters">
+    <select id="timeFilter" aria-label="Filter by time">
+      <option value="all">All time blocks</option>
+      <option value="INTRO">INTRO · 5:30–6:00 PM</option>
+      <option value="SESSION 1">SESSION 1 · 6:05–6:40 PM</option>
+      <option value="SESSION 2">SESSION 2 · 6:45–7:20 PM</option>
+      <option value="SESSION 3">SESSION 3 · 7:25–8:00 PM</option>
+    </select>
+    <select id="venueFilter" aria-label="Filter by venue">
+      <option value="all">All venues</option>
+    </select>
+    <input id="search" placeholder="Search topic or facilitator..." aria-label="Search sessions">
+  </div>
+  <div id="count"></div>
+  <div id="cards"></div>
+</main>
+
+<script>
+const venues = [
+  "FINE ARTS THEATER (FAT)", "AMR", "LITTLE THEATRE",
+  "HS COUNSELING OFFICE", "HS FACULTY LOUNGE", "MS FACULTY LOUNGE"
+];
+
+const blocks = [
+  {
+    round: "INTRO", time: "5:30–6:00 PM",
+    items: [
+      ["Counselor Session with Juniors","Mr. Swan"],
+      ["Counselor Session with Juniors","Ms. Mayo"],
+      ["Counselor Session with Juniors","Mr. Johnson"],
+      ["Counselor Session with Juniors","Ms. Lee"],
+      ["Counselor Session with Juniors","Mr. Brooks"],
+      ["Counselor Session with Juniors","Ms. Roth"]
+    ]
+  },
+  {
+    round: "SESSION 1", time: "6:05–6:40 PM",
+    items: [
+      ["Country Specific Admission Process: USA","Mr. Swan"],
+      ["Country Specific Admission Process: EUROPE","Ms. Mayo"],
+      ["Country Specific Admission Process: AUSTRALIA","Ms. Roth"],
+      ["MEDICINE","Ms. Lee"],
+      ["Country Specific Admission Process: CANADA","Mr. Brooks"],
+      ["",""]
+    ]
+  },
+  {
+    round: "SESSION 2", time: "6:45–7:20 PM",
+    items: [
+      ["TESTING","Mr. Swan"],
+      ["Country Specific Admission Process: UK","Ms. Mayo"],
+      ["US Essays","Mr. Johnson"],
+      ["Career Trends and College Majors that Matter","Ms. Lee"],
+      ["Oxford and Cambridge Admission Process","Mr. Brooks"],
+      ["",""]
+    ]
+  },
+  {
+    round: "SESSION 3", time: "7:25–8:00 PM",
+    items: [
+      ["Country Specific Admission Process: CANADA","Mr. Brooks"],
+      ["Country Specific Admission Process: UK","Ms. Mayo"],
+      ["US Essays","Mr. Johnson"],
+      ["Country Specific Admission Process: ASIA","Mr. Swan"],
+      ["",""], ["",""]
+    ]
+  }
+];
+
+const venueFilter = document.getElementById("venueFilter");
+venues.forEach((venue, index) => {
+  const option = document.createElement("option");
+  option.value = index;
+  option.textContent = venue;
+  venueFilter.appendChild(option);
+});
+
+function render() {
+  const grid = document.getElementById("cards");
+  const timeFilter = document.getElementById("timeFilter").value;
+  const venueValue = venueFilter.value;
+  const query = document.getElementById("search").value.toLowerCase().trim();
+  grid.innerHTML = "";
+  let shown = 0;
+
+  blocks.forEach(block => {
+    if (timeFilter !== "all" && block.round !== timeFilter) return;
+    block.items.forEach((item, index) => {
+      const [topic, person] = item;
+      if (!topic) return;
+      if (venueValue !== "all" && Number(venueValue) !== index) return;
+      const text = (topic + " " + person + " " + venues[index]).toLowerCase();
+      if (query && !text.includes(query)) return;
+
+      shown++;
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const venue = document.createElement("div");
+      venue.className = "venue";
+      venue.textContent = venues[index];
+
+      const round = document.createElement("div");
+      round.className = "round";
+      round.textContent = block.round;
+
+      const time = document.createElement("div");
+      time.className = "time";
+      time.textContent = block.time;
+
+      const title = document.createElement("div");
+      title.className = "topic";
+      title.textContent = topic;
+
+      const facilitator = document.createElement("div");
+      facilitator.className = "person";
+      facilitator.textContent = "Facilitator: " + person;
+
+      card.append(venue, round, time, title, facilitator);
+      grid.appendChild(card);
+    });
+  });
+
+  document.getElementById("count").textContent =
+    shown + " sessions displayed";
+
+  if (!shown) {
+    const message = document.createElement("p");
+    message.style.color = "white";
+    message.textContent = "No matching sessions. Try another filter.";
+    grid.appendChild(message);
+  }
+}
+
+document.getElementById("timeFilter").addEventListener("change", render);
+venueFilter.addEventListener("change", render);
+document.getElementById("search").addEventListener("input", render);
+render();
+</script>
+</body>
+</html>
+
